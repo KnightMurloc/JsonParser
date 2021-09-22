@@ -6,6 +6,9 @@
 #define JSON_PARSE_JSONPARSER_H
 
 #include <iostream>
+#include <string>
+#include <list>
+#include <map>
 
 enum VariableType {
     STRING,
@@ -16,9 +19,15 @@ enum VariableType {
     OBJECT
 };
 
+struct Entry{
+    int start;
+    int end;
+};
 
 //TODO возвращать масив строк
-int parse_object(std::istream& stream);
+int parse_object(std::istream& stream, std::string& parent, std::string& frequired_key, std::list<std::pair<std::string,std::string>>& result);
+
+std::list<std::pair<std::string,std::string>> find_keys(std::istream& stream, std::string key);
 
 class JsonException: public std::exception {
 public:

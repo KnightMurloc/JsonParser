@@ -6,10 +6,16 @@
 
 #include <iostream>
 #include <string>
+#include <memory.h>
+#include <mem.h>
+#include <list>
 
 using std::cout;
 using std::endl;
 using std::string;
+using std::map;
+using std::list;
+using std::pair;
 
 //TODO ощибка неожиданого конца файла!
 
@@ -76,102 +82,137 @@ VariableType determine_type(std::istream& stream){
     throw JsonException("incorrect format");
 }
 
-string read_string_variable(std::istream& stream){
-    string str;
+int read_string_variable(std::istream& stream){
+//    string str;
     char c = '\0';
+//    size_t size = 0;
     while(!stream.eof()){
-        stream >> c;
+//        stream >> c;
+        stream.read(&c, sizeof(char));
         if(c == '\"'){
             break;
         }
-        str.push_back(c);
+//        str.push_back(c);
+//        size++;
     }
-    return str;
+    return stream.tellg();
 }
 
-string read_number(std::istream& stream){
-    string num;
-    stream.seekg(-1, std::ios::cur);
+int read_number(std::istream& stream){
+//    string num;
+//    stream.seekg(-1, std::ios::cur);
     char c = '\0';
+    //size_t size = 1; //так как первый символ уже прочитали
     while(!stream.eof()){
         stream >> c;
         if(c == ',' || c == '}'){
             break;
         }
-        num.push_back(c);
+//        num.push_back(c);
     }
+//    int end = stream.tellg();
     stream.seekg(-1, std::ios::cur);
-    return num;
+    return stream.tellg();
 }
 
-string read_boolean(std::istream& stream){
+int read_boolean(std::istream& stream){
     //второй символ булевой переменой
     char c = '\0';
     stream >> c;
 
     if(c == 'a'){
-        stream.seekg(3, std::ios::cur);
-        return "false";
+        string false_str(3, '\0');
+        stream.read(false_str.data(),3); //читаем остаток от false  lse
+        if(memcmp(false_str.data(), "lse", 3) == 0){
+            return stream.tellg();
+        }else{
+            throw JsonException("incorrect format");
+        }
     }
 
     if(c == 'r'){
-        stream.seekg(2, std::ios::cur);
-        return "true";
+        string true_str(2, '\0');
+        stream.read(true_str.data(),2); //читаем остаток от true  ue
+        if(memcmp(true_str.data(), "ue", 2) == 0){
+            return stream.tellg();
+        }else{
+            throw JsonException("incorrect format");
+        }
     }
     throw JsonException("incorrect format");
 }
 
-string read_array(std::istream& stream){
-    string array;
+int read_array(std::istream& stream){
+//    string array;
     char c = '\0';
     while(!stream.eof()){
         stream >> c;
         if(c == ']'){
             break;
         }
-        array.push_back(c);
+//        array.push_back(c);
     }
-    return array;
+    return stream.tellg();
 }
 
-string read_variable(std::istream& stream){
+int read_null(std::istream& stream){
+    string null_str(3, '\0');
+    stream.read(null_str.data(),3);
+    if(memcmp(null_str.data(), "ull", 3) == 0){
+        return stream.tellg();
+    }else{
+        throw JsonException("incorrect format");
+    }
+}
+
+Entry read_variable(std::istream& stream, string& key_name, string& frequired_key, list<pair<string,string>>& result){
     VariableType type = determine_type(stream);
 
+    Entry entry{};
+    entry.start = stream.tellg();
+    entry.start--;
+
     if(type == STRING){
-        return read_string_variable(stream);
+        entry.end = read_string_variable(stream);
+        return entry;
     }
 
     if(type == NUMBER){
-        return read_number(stream);
+        entry.end = read_number(stream);
+        return entry;
     }
 
     if(type == NULL_){
-        stream.seekg(3, std::ios::cur);
-        return string("null");
+//        stream.seekg(3, std::ios::cur);
+        entry.end = read_null(stream);
+        return entry;
     }
 
     if(type == BOOLEAN){
-        return read_boolean(stream);
+        entry.end = read_boolean(stream);
+        return entry;
     }
 
     if(type == ARRAY){
-        return read_array(stream);
+        entry.end = read_array(stream);
+        return entry;
     }
 
     if(type == OBJECT){
         stream.seekg(-1, std::ios::cur);
-        int start = stream.tellg();
-        int end = parse_object(stream);
-        string obj(end - start, '\0');
-        stream.seekg(start,std::ios::beg);
-        stream.read(obj.data(), end - start);
-        return obj;
+//        int start = stream.tellg();
+//        int end = parse_object(stream);
+//        string obj(end - start, '\0');
+//        stream.seekg(start,std::ios::beg);
+//        stream.read(obj.data(), end - start);
+        entry.end = parse_object(stream,key_name, frequired_key, result);
+        return entry;
     }
 
     throw JsonException("incorrect format");
 }
 
-int parse_object(std::istream& stream){
+int parse_object(std::istream& stream, string& parent, string& frequired_key, list<pair<string,string>>& result){
     //char open_brace = skip_space(stream);
     char open_brace = '\0';
     stream >> open_brace;
@@ -181,6 +222,7 @@ int parse_object(std::istream& stream){
 
     while(!stream.eof()){
         string key_name = decode_key_name(stream);
+
         //char colon = skip_space(stream);
         char colon = '\0';
         stream >> colon;
@@ -188,8 +230,20 @@ int parse_object(std::istream& stream){
             throw JsonException("incorrect format");
         }
 
-        string variable = read_variable(stream);
-        cout << key_name << " : " << variable << endl;
+//        int start = stream.tellg();
+        Entry entry = read_variable(stream,key_name, frequired_key, result);
+
+        if(strcasecmp(key_name.c_str(), frequired_key.c_str()) == 0){
+            string variable(entry.end - entry.start, '\0');
+            stream.seekg(entry.start, std::ios::beg);
+            stream.read(variable.data(), entry.end - entry.start);
+
+
+
+            result.emplace_back(parent.append("/").append(key_name), variable);
+        }
+//        string variable = read_variable(stream);
+        //cout << key_name << " : " << variable << endl;
 
 //        char comma = skip_space(stream);
         char comma = '\0';
@@ -203,4 +257,11 @@ int parse_object(std::istream& stream){
         }
     }
     return stream.tellg();
+}
+
+list<pair<string,string>> find_keys(std::istream& stream, std::string key){
+    string base;
+    list<pair<string,string>> result;
+    parse_object(stream,base, key,result);
+    return result;
 }
