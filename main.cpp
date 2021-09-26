@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <list>
-#include "JsonParser.h"
+#include "JsonParserLib/JsonParser.h"
 
 using namespace std;
 

@@ -10,22 +10,6 @@
 #include <list>
 #include <map>
 
-enum VariableType {
-    STRING,
-    NUMBER,
-    NULL_,
-    BOOLEAN,
-    ARRAY,
-    OBJECT
-};
-
-struct Entry{
-    int start;
-    int end;
-};
-
-//TODO возвращать масив строк
-int parse_object(std::istream& stream, std::string& parent, std::string& frequired_key, std::list<std::pair<std::string,std::string>>& result);
 
 std::list<std::pair<std::string,std::string>> find_keys(std::istream& stream, std::string key);
 
