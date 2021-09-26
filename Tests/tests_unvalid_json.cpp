@@ -73,7 +73,7 @@ TEST_CASE("undefined variable type", "[unvalid json]"){
                 auto result = find_keys(file, "string");
                 FAIL("expect JsonException");
             } catch (JsonException &e) {
-                REQUIRE(string("incorrect format") == e.what());
+                REQUIRE(string("incorrect format.") == e.what());
             }
         }
     }
@@ -133,6 +133,29 @@ TEST_CASE("undefined variable type", "[unvalid json]"){
 
         SECTION("with one brakes"){
             std::ifstream file("test_Files/unValid58.json");
+            try {
+                auto result = find_keys(file, "string");
+                FAIL("expect JsonException");
+            } catch (JsonException &e) {
+                REQUIRE(string("incorrect format. undefined variable type") == e.what());
+            }
+        }
+    }
+
+    SECTION("object"){
+
+        SECTION("without brakets"){
+            std::ifstream file("test_Files/unValid59.json");
+            try {
+                auto result = find_keys(file, "string");
+                FAIL("expect JsonException");
+            } catch (JsonException &e) {
+                REQUIRE(string("incorrect format.") == e.what());
+            }
+        }
+
+        SECTION("with one brakes"){
+            std::ifstream file("test_Files/unValid510.json");
             try {
                 auto result = find_keys(file, "string");
                 FAIL("expect JsonException");

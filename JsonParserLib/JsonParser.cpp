@@ -101,7 +101,7 @@ int read_number(std::istream& stream){
     char c = '\0';
     while(!stream.eof()){
         stream >> c;
-        if(c == ',' || c == '}'){
+        if(c == ',' || c == '}' || c == ']'){
             break;
         }
         if(!(c >= '0' && c <= '9') && c != 'e'  && c != '+'  && c != '-'  && c != '.'){
@@ -139,16 +139,25 @@ int read_boolean(std::istream& stream){
     throw JsonException("incorrect format. undefined variable type");
 }
 
-int read_array(std::istream& stream){
+int read_array(std::istream& stream, string parent, string& frequired_key, list<pair<string,string>>& result){
     char c = '\0';
     while(!stream.eof()){
+
+        read_variable(stream,parent,frequired_key,result);
+
         stream >> c;
+
         if(c == ']'){
             break;
         }
 
+        if(c != ','){
+            throw JsonException("incorrect format. undefined variable type");
+        }
+
         //TODO пределать четение с нормальным парсингом
     }
+    //stream.seekg(-1, std::ios::cur);
     return stream.tellg();
 }
 
@@ -190,7 +199,7 @@ Entry read_variable(std::istream& stream, string& key_name, string& frequired_ke
     }
 
     if(type == ARRAY){
-        entry.end = read_array(stream);
+        entry.end = read_array(stream, "/" + key_name, frequired_key, result);
         return entry;
     }
 
@@ -236,7 +245,7 @@ int parse_object(std::istream& stream, string parent, string& frequired_key, lis
         }
 
         if(comma != ','){
-            throw JsonException("incorrect format");
+            throw JsonException("incorrect format.");
         }
     }
     throw JsonException("incorrect format. unexpected object end");
