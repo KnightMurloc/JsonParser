@@ -2,7 +2,7 @@
 #include <fstream>
 #include <list>
 #include <io.h>
-#include "JsonParserLib/JsonParser.h"
+#include "JsonParser_Lib/JsonParser.h"
 
 using std::cout;
 using std::endl;
@@ -67,5 +67,6 @@ int main(int argc, char* argv[]) {
     }catch(exception& e){
         cout << e.what() << endl;
     }
+
     return 0;
 }

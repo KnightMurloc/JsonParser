@@ -2,7 +2,7 @@ project(Catch_tests)
 
 add_compile_options(-Winvalid-pch)
 add_compile_options(-O2)
-include_directories("../JsonParserLib")
+include_directories("../JsonParser_Lib")
 include_directories(Catch2)
 
 add_executable(CatchTest_run tests_valid_json.cpp tests_unvalid_json.cpp)

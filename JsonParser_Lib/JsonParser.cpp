@@ -7,13 +7,12 @@
 #include <iostream>
 #include <string>
 #include <memory.h>
-#include <mem.h>
+#include <cstring>
 #include <list>
 
 using std::cout;
 using std::endl;
 using std::string;
-using std::map;
 using std::list;
 using std::pair;
 
@@ -33,7 +32,8 @@ struct Entry{
 
 int parse_object(std::istream& stream, string parent, string& frequired_key, list<pair<string,string>>& result);
 Entry read_variable(std::istream& stream, string& key_name, string& frequired_key, list<pair<string,string>>& result);
-//возвращает имя переменой
+
+//return key name
 string decode_key_name(std::istream& stream){
     char quotes = '\0';
     stream >> quotes;
@@ -43,8 +43,20 @@ string decode_key_name(std::istream& stream){
 
     string key_name;
     char c = '\0';
+    bool ignore_quotes = false;
     while(!stream.eof()){
         stream.read(&c, sizeof(char));
+
+        if(c == '\\'){
+            ignore_quotes = true;
+            continue;
+        }
+
+        if(ignore_quotes){
+            ignore_quotes = false;
+            continue;
+        }
+
         if(c == '\"'){
             break;
         }
@@ -53,9 +65,9 @@ string decode_key_name(std::istream& stream){
 
     return key_name;
 }
-//возаращает тип переменой
+//return variable type
 VariableType determine_type(std::istream& stream){
-    //первый символ переменой
+    //the first variable symbol
     char c = '\0';
     stream >> c;
     if(c == '\"'){
@@ -87,8 +99,19 @@ VariableType determine_type(std::istream& stream){
 
 int read_string_variable(std::istream& stream){
     char c = '\0';
+    bool ignore_quotes = false;
     while(!stream.eof()){
         stream.read(&c, sizeof(char));
+        if(c == '\\'){
+            ignore_quotes = true;
+            continue;
+        }
+
+        if(ignore_quotes){
+            ignore_quotes = false;
+            continue;
+        }
+
         if(c == '\"'){
             break;
         }
@@ -113,13 +136,13 @@ int read_number(std::istream& stream){
 }
 
 int read_boolean(std::istream& stream){
-    //второй символ булевой переменой
+    //the second symbol of boolean variable
     char c = '\0';
     stream >> c;
 
     if(c == 'a'){
         string false_str(3, '\0');
-        stream.read(false_str.data(),3); //читаем остаток от false  lse
+        stream.read(false_str.data(),3); //read the rest of "false" (lse)
         if(memcmp(false_str.data(), "lse", 3) == 0){
             return stream.tellg();
         }else{
@@ -129,7 +152,7 @@ int read_boolean(std::istream& stream){
 
     if(c == 'r'){
         string true_str(2, '\0');
-        stream.read(true_str.data(),2); //читаем остаток от true  ue
+        stream.read(true_str.data(),2); //read the rest of "true" (ue)
         if(memcmp(true_str.data(), "ue", 2) == 0){
             return stream.tellg();
         }else{
@@ -142,7 +165,6 @@ int read_boolean(std::istream& stream){
 int read_array(std::istream& stream, string parent, string& frequired_key, list<pair<string,string>>& result){
     char c = '\0';
     while(!stream.eof()){
-
         read_variable(stream,parent,frequired_key,result);
 
         stream >> c;
@@ -154,16 +176,15 @@ int read_array(std::istream& stream, string parent, string& frequired_key, list<
         if(c != ','){
             throw JsonException("incorrect format. undefined variable type");
         }
-
-        //TODO пределать четение с нормальным парсингом
     }
-    //stream.seekg(-1, std::ios::cur);
+
     return stream.tellg();
 }
 
 int read_null(std::istream& stream){
     string null_str(3, '\0');
     stream.read(null_str.data(),3);
+    //read the rest of "null" (ull)
     if(memcmp(null_str.data(), "ull", 3) == 0){
         return stream.tellg();
     }else{
@@ -176,7 +197,7 @@ Entry read_variable(std::istream& stream, string& key_name, string& frequired_ke
 
     Entry entry{};
     entry.start = stream.tellg();
-    entry.start--;
+    entry.start--; //start of variable
 
     if(type == STRING){
         entry.end = read_string_variable(stream);
@@ -230,6 +251,7 @@ int parse_object(std::istream& stream, string parent, string& frequired_key, lis
 
         Entry entry = read_variable(stream,key_name, frequired_key, result);
 
+        //if its key that we finding then add to list
         if(strcasecmp(key_name.c_str(), frequired_key.c_str()) == 0){
             string variable(entry.end - entry.start, '\0');
             stream.seekg(entry.start, std::ios::beg);
